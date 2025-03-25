@@ -1,0 +1,381 @@
+:root {
+  /* Color variables */
+  --grid-primary-color: #2c3e50;
+  --grid-secondary-color: #3498db;
+  --grid-background-color: #ffffff;
+  --grid-header-background: #f8f9fa;
+  --grid-border-color: #e0e0e0;
+  --grid-row-hover-color: #f5f5f5;
+  --grid-row-selected-color: #e3f2fd;
+  --grid-text-color: #333333;
+  --grid-header-text-color: #2c3e50;
+  --grid-filter-background: #f0f0f0;
+  --grid-resize-handle-color: #bdbdbd;
+  --grid-resize-handle-hover-color: #3498db;
+  
+  /* Spacing variables */
+  --grid-cell-padding: 8px 12px;
+  --grid-border-radius: 4px;
+  
+  /* Typography */
+  --grid-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  --grid-font-size: 14px;
+  --grid-header-font-size: 14px;
+  --grid-header-font-weight: 600;
+}
+
+/* Base grid container */
+.data-grid-container {
+  position: relative;
+  width: 100%;
+  border: 1px solid var(--grid-border-color);
+  border-radius: var(--grid-border-radius);
+  overflow: auto;
+}
+
+.data-grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--grid-font-family);
+  font-size: var(--grid-font-size);
+  color: var(--grid-text-color);
+  overflow: hidden;
+  table-layout: fixed;
+}
+
+/* Header styles */
+.data-grid-header {
+  background-color: var(--grid-header-background);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.data-grid-header-cell {
+  padding: var(--grid-cell-padding);
+  font-weight: var(--grid-header-font-weight);
+  font-size: var(--grid-header-font-size);
+  color: var(--grid-header-text-color);
+  text-align: left;
+  border-bottom: 2px solid var(--grid-border-color);
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.data-grid-header-cell.sortable {
+  cursor: pointer;
+}
+
+.data-grid-header-cell.sortable:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.data-grid-header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.data-grid-sort-icon {
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--grid-secondary-color);
+  display: inline-block;
+}
+
+/* Resize handle */
+.data-grid-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 10px;
+  height: 100%;
+  cursor: col-resize;
+  background-color: rgba(52, 152, 219, 0.4);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-left: 1px solid var(--grid-secondary-color);
+}
+
+.resize-indicator {
+  height: 20px;
+  width: 3px;
+  background-color: var(--grid-secondary-color);
+}
+
+.data-grid-resize-handle:hover,
+.data-grid-resize-handle:active {
+  background-color: rgba(52, 152, 219, 0.6);
+  width: 10px;
+}
+
+.data-grid-resize-handle:hover .resize-indicator,
+.data-grid-resize-handle:active .resize-indicator {
+  background-color: var(--grid-secondary-color);
+  width: 3px;
+}
+
+/* Filter styles */
+.data-grid-filter {
+  margin-top: 4px;
+}
+
+.data-grid-filter-input {
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px solid var(--grid-border-color);
+  border-radius: 3px;
+  font-size: 12px;
+  background-color: var(--grid-filter-background);
+}
+
+.data-grid-filter-input:focus {
+  outline: none;
+  border-color: var(--grid-secondary-color);
+}
+
+/* Row styles */
+.data-grid-row {
+  border-bottom: 1px solid var(--grid-border-color);
+}
+
+.data-grid-row:nth-child(even) {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.data-grid-row:hover {
+  background-color: var(--grid-row-hover-color);
+}
+
+.data-grid-row.selected {
+  background-color: var(--grid-row-selected-color);
+}
+
+/* Cell styles */
+.data-grid-cell {
+  padding: var(--grid-cell-padding);
+  border-right: 1px solid var(--grid-border-color);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.data-grid-cell:last-child {
+  border-right: none;
+}
+
+/* Empty state */
+.data-grid-empty-row {
+  padding: 20px;
+  text-align: center;
+  color: #666;
+  font-style: italic;
+}
+
+/* Virtualization styles */
+.data-grid-virtualized-container {
+  position: relative;
+  overflow: auto;
+}
+
+.data-grid-virtualized-content {
+  position: relative;
+}
+
+/* Virtualized grid specific styles */
+.data-grid-container:has(tbody > tr[style*="position: absolute"]) .data-grid {
+  table-layout: fixed;
+}
+
+.data-grid-container:has(tbody > tr[style*="position: absolute"]) .data-grid-header-row {
+  display: flex;
+  width: 100%;
+}
+
+.data-grid-container:has(tbody > tr[style*="position: absolute"]) .data-grid-header-cell {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.data-grid-container:has(tbody > tr[style*="position: absolute"]) tbody tr[style*="position: absolute"] {
+  display: flex;
+  width: 100%;
+}
+
+.data-grid-container:has(tbody > tr[style*="position: absolute"]) tbody tr[style*="position: absolute"] .data-grid-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Editable cell styles */
+.data-grid-cell.editable {
+  cursor: text;
+  position: relative;
+}
+
+.data-grid-cell.editable:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.data-grid-cell.editing {
+  padding: 0;
+}
+
+.data-grid-cell-content {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.data-grid-cell-edit-indicator {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 8px 8px 0;
+  border-color: transparent var(--grid-secondary-color) transparent transparent;
+  opacity: 0.3;
+}
+
+.data-grid-cell-editor {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+}
+
+.data-grid-cell-editor input {
+  width: 100%;
+  height: 100%;
+  padding: var(--grid-cell-padding);
+  border: 2px solid var(--grid-secondary-color);
+  outline: none;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.data-grid-cell-editor input.error {
+  border-color: #d32f2f;
+}
+
+.data-grid-cell-error {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  background-color: #d32f2f;
+  color: white;
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 2px;
+  z-index: 2;
+}
+
+/* Pagination styles */
+.data-grid-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px;
+  border-top: 1px solid var(--grid-border-color);
+}
+
+.data-grid-pagination-button {
+  min-width: 32px;
+  height: 32px;
+  margin: 0 4px;
+  padding: 0 8px;
+  background-color: transparent;
+  border: 1px solid var(--grid-border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.data-grid-pagination-button:hover:not(:disabled) {
+  background-color: var(--grid-row-hover-color);
+}
+
+.data-grid-pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.data-grid-pagination-button.active {
+  background-color: var(--grid-secondary-color);
+  color: white;
+  border-color: var(--grid-secondary-color);
+}
+
+.data-grid-pagination-ellipsis {
+  min-width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 4px;
+}
+
+/* Page size selector */
+.data-grid-page-size-selector {
+  display: flex;
+  align-items: center;
+  margin-right: 16px;
+}
+
+.data-grid-page-size-selector select {
+  margin-left: 8px;
+  padding: 4px 8px;
+  border: 1px solid var(--grid-border-color);
+  border-radius: 4px;
+  background-color: white;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .data-grid {
+    font-size: 12px;
+  }
+  
+  .data-grid-cell,
+  .data-grid-header-cell {
+    padding: 6px 8px;
+  }
+  
+  .data-grid-filter-input {
+    padding: 2px 4px;
+    font-size: 11px;
+  }
+  
+  .data-grid-pagination-button {
+    min-width: 28px;
+    height: 28px;
+    margin: 0 2px;
+  }
+}
+
+/* Accessibility */
+.data-grid:focus {
+  outline: 2px solid var(--grid-secondary-color);
+}
+
+.data-grid-cell:focus,
+.data-grid-header-cell:focus {
+  outline: 2px solid var(--grid-secondary-color);
+  outline-offset: -2px;
+}
