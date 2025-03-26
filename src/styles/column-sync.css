@@ -1,0 +1,69 @@
+/* Specific styles for column width synchronization in virtualized grids */
+
+/* Ensure column widths are consistent between header and body */
+.data-grid-virtualized .data-grid-header-cell,
+.data-grid-virtualized .data-grid-cell {
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+  width: var(--col-width) !important;
+  min-width: var(--col-width) !important;
+  max-width: var(--col-width) !important;
+}
+
+/* Ensure colgroup columns have consistent widths */
+.data-grid-virtualized colgroup col,
+.data-grid-virtualized-body colgroup col {
+  visibility: visible !important;
+  width: var(--col-width) !important;
+}
+
+/* Ensure tables have consistent layout */
+.data-grid-virtualized .data-grid-header table,
+.data-grid-virtualized .data-grid-virtualized-body table {
+  table-layout: fixed !important;
+  width: 100% !important;
+  border-collapse: collapse !important;
+  border-spacing: 0 !important;
+}
+
+/* Prevent column width changes during scroll */
+.data-grid-virtualized .data-grid-header-cell,
+.data-grid-virtualized .data-grid-cell {
+  transition: none !important;
+}
+
+/* Ensure header cells maintain width during resize */
+.data-grid-header-cell[data-width],
+.data-grid-cell[data-width] {
+  width: attr(data-width px) !important;
+  min-width: attr(data-width px) !important;
+  max-width: attr(data-width px) !important;
+}
+
+/* Improve column resize handle visibility and behavior */
+.data-grid-resize-handle {
+  position: absolute !important;
+  right: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  width: 8px !important;
+  cursor: col-resize !important;
+  z-index: 30 !important;
+  touch-action: none !important;
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+
+.data-grid-resize-handle:hover {
+  background: rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Prevent sort during resize */
+body[data-grid-resizing="true"] .data-grid-header-cell {
+  pointer-events: none !important;
+}
+
+body[data-grid-resizing="true"] .data-grid-resize-handle {
+  pointer-events: auto !important;
+}

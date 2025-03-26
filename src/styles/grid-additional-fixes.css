@@ -1,0 +1,112 @@
+/* Additional fixes for header alignment and column resize issues */
+
+/* Ensure header stays fixed during scroll */
+.data-grid-sticky-header-container {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 100 !important;
+  background-color: var(--grid-header-background, #f5f5f5) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Prevent sort during resize with stronger selectors */
+.data-grid-header-cell[data-resizing="true"],
+.data-grid-header-cell.resizing {
+  cursor: col-resize !important;
+  user-select: none !important;
+  pointer-events: none !important;
+}
+
+/* Allow pointer events on resize handle during resize */
+.data-grid-header-cell[data-resizing="true"] .data-grid-resize-handle,
+.data-grid-header-cell.resizing .data-grid-resize-handle {
+  pointer-events: auto !important;
+}
+
+/* Improve header-body column alignment */
+.data-grid-virtualized .data-grid-header-row th,
+.data-grid-virtualized tbody tr td {
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Ensure consistent widths between header and body */
+.data-grid-virtualized colgroup col {
+  visibility: visible !important;
+}
+
+/* Prevent text selection during resize */
+body[data-grid-resizing="true"] * {
+  user-select: none !important;
+}
+
+/* Fix for header cell resize handles */
+.data-grid-resize-handle {
+  position: absolute !important;
+  right: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  width: 8px !important; /* Slightly wider for easier grabbing */
+  cursor: col-resize !important;
+  z-index: 30 !important; /* Higher z-index to ensure it's clickable */
+  touch-action: none !important; /* Prevent touch scrolling during resize */
+  background: rgba(0, 0, 0, 0.05) !important; /* Subtle visual indicator */
+}
+
+/* Make resize handle more visible on hover */
+.data-grid-resize-handle:hover {
+  background: rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Ensure virtualized grid header stays fixed */
+.data-grid-virtualized .data-grid-header,
+.data-grid-sticky-header-container {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 100 !important;
+  background-color: var(--grid-header-background, #f5f5f5) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  will-change: transform !important;
+  transform: translateZ(0) !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  overflow: hidden !important;
+}
+
+/* Fix for virtualized grid header and body alignment */
+.data-grid-virtualized-body {
+  overflow: auto !important;
+  position: relative !important;
+  will-change: transform !important; /* Hardware acceleration for smoother scrolling */
+  contain: content !important; /* Improve performance */
+  max-height: calc(100vh - 200px) !important; /* Limit height to ensure header is visible */
+  scrollbar-width: thin !important; /* Thinner scrollbars for better appearance */
+}
+
+/* Ensure column widths are consistent between header and body */
+.data-grid-virtualized colgroup col,
+.data-grid-virtualized-body colgroup col {
+  visibility: visible !important;
+  width: var(--col-width) !important;
+}
+
+/* Improve alignment between header and body cells */
+.data-grid-virtualized .data-grid-header-cell,
+.data-grid-virtualized .data-grid-cell {
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Ensure header and body tables have same width */
+.data-grid-virtualized .data-grid-header table,
+.data-grid-virtualized .data-grid-virtualized-body table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+}

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { HeaderProps, ColumnDefinition } from '../types';
 
 /**
@@ -18,29 +18,17 @@ const Header: React.FC<HeaderProps> = ({
   const [initialX, setInitialX] = useState<number>(0);
   const [initialWidth, setInitialWidth] = useState<number>(0);
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
+  const isResizing = useRef(false);
+  const lastResizeTime = useRef<number>(0);
+  const resizeTimeoutId = useRef<number | null>(null);
 
-  // Handle sort click
-  const handleSortClick = useCallback((field: string) => {
-    if (onSort) {
-      onSort(field);
-    }
-  }, [onSort]);
-
-  // Handle resize start
-  const handleResizeStart = useCallback((e: React.MouseEvent<HTMLDivElement>, field: string, currentWidth: number) => {
-    if (!resizableColumns || !onResize) return;
-    
-    setResizingColumn(field);
-    setInitialX(e.clientX);
-    setInitialWidth(currentWidth);
-    
-    e.preventDefault();
-    e.stopPropagation(); // Prevent triggering sort
-  }, [resizableColumns, onResize]);
-
-  // Handle resize move
+  // Define handleResizeMove and handleResizeEnd first as functions
+  // so they can be referenced in handleResizeStart
   const handleResizeMove = useCallback((e: MouseEvent) => {
     if (!resizingColumn || !onResize) return;
+    
+    // Set the flag to indicate we're actively resizing
+    isResizing.current = true;
     
     const diff = e.clientX - initialX;
     const newWidth = Math.max(50, initialWidth + diff); // Minimum width of 50px
@@ -51,13 +39,142 @@ const Header: React.FC<HeaderProps> = ({
     }));
     
     onResize(resizingColumn, newWidth);
+    
+    // Prevent any click events during resize
+    e.preventDefault();
+    e.stopPropagation();
   }, [resizingColumn, initialX, initialWidth, onResize]);
 
-  // Handle resize end
   const handleResizeEnd = useCallback((e: MouseEvent) => {
+    // Clear any existing timeout
+    if (resizeTimeoutId.current !== null) {
+      window.clearTimeout(resizeTimeoutId.current);
+    }
+    
     setResizingColumn(null);
-    e.stopPropagation(); // Prevent triggering sort after resize ends
+    
+    // Prevent any click events that might trigger sorting
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Remove the data attribute from the document body
+    document.body.removeAttribute('data-grid-resizing');
+    
+    // Remove the class from the document body
+    document.body.classList.remove('data-grid-resizing');
+    
+    // Record the time when resize ended to prevent immediate sort
+    lastResizeTime.current = Date.now();
+    (window as any).lastResizeTime = Date.now();
+    
+    // Clean up event listeners
+    document.removeEventListener('mousemove', handleResizeMove);
+    document.removeEventListener('mouseup', handleResizeEnd);
+    
+    // Add a delay before allowing sort clicks again
+    // Use a longer timeout to ensure no accidental sorting happens
+    resizeTimeoutId.current = window.setTimeout(() => {
+      isResizing.current = false;
+      (window as any).isResizingColumn = false;
+      resizeTimeoutId.current = null;
+    }, 1500); // Increased to 1500ms to ensure no accidental sorting
+  }, [handleResizeMove]);
+
+  // Handle sort click
+  const handleSortClick = useCallback((field: string) => {
+    // Don't trigger sort if we're resizing or just finished resizing
+    if (isResizing.current || 
+        document.body.getAttribute('data-grid-resizing') === 'true' || 
+        (window as any).isResizingColumn === true ||
+        Date.now() - ((window as any).lastResizeTime || 0) < 2000) {
+      console.log('Ignoring sort click - too close to resize action');
+      return;
+    }
+    
+    if (onSort) {
+      onSort(field);
+    }
+  }, [onSort]);
+  
+  // Prevent sort during resize by setting a longer timeout
+  useEffect(() => {
+    // Set a global flag to prevent sort during resize
+    (window as any).isResizingColumn = false;
+    (window as any).lastResizeTime = 0;
+    
+    return () => {
+      // Clean up global flags
+      delete (window as any).isResizingColumn;
+      delete (window as any).lastResizeTime;
+      
+      // Clear any existing timeout
+      if (resizeTimeoutId.current !== null) {
+        window.clearTimeout(resizeTimeoutId.current);
+      }
+    };
   }, []);
+  
+  // Prevent sort during resize by setting a longer timeout
+  useEffect(() => {
+    // Set a global flag to prevent sort during resize
+    (window as any).isResizingColumn = false;
+    (window as any).lastResizeTime = 0;
+    
+    return () => {
+      // Clean up global flags
+      delete (window as any).isResizingColumn;
+      delete (window as any).lastResizeTime;
+      
+      // Clear any existing timeout
+      if (resizeTimeoutId.current !== null) {
+        window.clearTimeout(resizeTimeoutId.current);
+      }
+    };
+  }, []);
+
+  // Handle resize start
+  const handleResizeStart = useCallback((e: React.MouseEvent<HTMLDivElement>, field: string, currentWidth: number) => {
+    if (!resizableColumns || !onResize) return;
+    
+    // Set the resizing state immediately
+    setResizingColumn(field);
+    setInitialX(e.clientX);
+    setInitialWidth(currentWidth);
+    
+    // Set flags to prevent sorting during resize
+    isResizing.current = true;
+    lastResizeTime.current = Date.now();
+    (window as any).isResizingColumn = true;
+    (window as any).lastResizeTime = Date.now();
+    
+    // Prevent triggering sort
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Add a data attribute to the document body to indicate resize is in progress
+    document.body.setAttribute('data-grid-resizing', 'true');
+    
+    // Add a class to the document body to prevent text selection during resize
+    document.body.classList.add('data-grid-resizing');
+    
+    // Set a timeout to ensure resize is completed before allowing sort
+    if (resizeTimeoutId.current !== null) {
+      window.clearTimeout(resizeTimeoutId.current);
+    }
+    resizeTimeoutId.current = window.setTimeout(() => {
+      // This will be cleared in handleResizeEnd
+    }, 2000);
+    
+    // Add event listeners for mousemove and mouseup
+    document.addEventListener('mousemove', handleResizeMove);
+    document.addEventListener('mouseup', handleResizeEnd);
+    
+    // Set a data attribute on the specific header cell being resized
+    const headerCell = e.currentTarget.closest('th');
+    if (headerCell) {
+      headerCell.setAttribute('data-resizing', 'true');
+    }
+  }, [resizableColumns, onResize, handleResizeMove, handleResizeEnd]);
 
   // Add and remove event listeners for resize
   useEffect(() => {
@@ -101,13 +218,27 @@ const Header: React.FC<HeaderProps> = ({
         return (
           <th
             key={`header-${column.field}-${index}`}
-            className={`data-grid-header-cell ${isSortable ? 'sortable' : ''}`}
+            className={`data-grid-header-cell ${isSortable ? 'sortable' : ''} ${resizingColumn === column.field ? 'resizing' : ''}`}
             style={{ 
               width: `${width}px`,
-              cursor: isSortable ? 'pointer' : 'default',
-              position: 'relative'
+              minWidth: `${width}px`,
+              maxWidth: `${width}px`,
+              cursor: isSortable && !isResizing.current ? 'pointer' : 'default',
+              position: 'relative',
+              boxSizing: 'border-box'
             }}
-            onClick={isSortable && !resizingColumn ? () => handleSortClick(column.field) : undefined}
+            onClick={(e) => {
+              // Only trigger sort if we're not resizing and it's sortable
+              if (isSortable && !isResizing.current && 
+                  !document.body.hasAttribute('data-grid-resizing') &&
+                  !(window as any).isResizingColumn &&
+                  Date.now() - lastResizeTime.current > 1500 &&
+                  Date.now() - ((window as any).lastResizeTime || 0) > 1500) {
+                handleSortClick(column.field);
+              }
+            }}
+            data-resizing={resizingColumn === column.field ? 'true' : 'false'}
+            data-field={column.field}
           >
             <div className="data-grid-header-content">
               {column.renderHeader ? column.renderHeader(column) : column.headerName}

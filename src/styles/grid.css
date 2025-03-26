@@ -30,7 +30,9 @@
   width: 100%;
   border: 1px solid var(--grid-border-color);
   border-radius: var(--grid-border-radius);
-  overflow: auto;
+  overflow: hidden; /* Changed from auto to hidden to prevent double scrollbars */
+  display: flex;
+  flex-direction: column;
 }
 
 .data-grid {
@@ -104,6 +106,12 @@
   border-left: 1px solid var(--grid-secondary-color);
 }
 
+/* Prevent text selection during resize */
+body.data-grid-resizing {
+  user-select: none;
+  cursor: col-resize;
+}
+
 .resize-indicator {
   height: 20px;
   width: 3px;
@@ -124,16 +132,21 @@
 
 /* Filter styles */
 .data-grid-filter {
-  margin-top: 4px;
+  margin-top: 8px;
+  display: block;
+  width: 100%;
+  position: relative;
+  z-index: 35;
 }
 
 .data-grid-filter-input {
   width: 100%;
-  padding: 4px 8px;
+  padding: 6px 8px;
   border: 1px solid var(--grid-border-color);
   border-radius: 3px;
   font-size: 12px;
   background-color: var(--grid-filter-background);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .data-grid-filter-input:focus {
@@ -190,30 +203,264 @@
 }
 
 /* Virtualized grid specific styles */
-.data-grid-container:has(tbody > tr[style*="position: absolute"]) .data-grid {
+.data-grid-virtualized .data-grid {
+  table-layout: fixed !important;
+  width: 100% !important;
+  border-collapse: collapse;
+  margin: 0;
+  padding: 0;
+  position: relative;
+  z-index: 1;
+  contain: content;
+}
+
+.data-grid-virtualized .data-grid-header-row {
+  display: table-row;
+  width: 100%;
+  position: sticky;
+  position: -webkit-sticky; /* For Safari support */
+  top: 0;
+  z-index: 20;
+  background-color: var(--grid-header-background);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   table-layout: fixed;
+  left: 0;
+  height: auto; /* Allow height to expand based on content */
+  min-height: 80px; /* Increased minimum height for filter visibility */
+  overflow: visible;
+  will-change: transform;
+  transform: translateZ(0); /* Force GPU acceleration */
+  contain: layout;
+  border-bottom: 2px solid var(--grid-border-color);
+  white-space: nowrap;
+  /* Ensure header stays in sync with body */
+  min-width: 100%;
 }
 
-.data-grid-container:has(tbody > tr[style*="position: absolute"]) .data-grid-header-row {
-  display: flex;
+.data-grid-virtualized .data-grid-header-cell {
+  display: table-cell;
+  overflow: visible; /* Changed from hidden to visible for filter display */
+  box-sizing: border-box;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  position: sticky;
+  position: -webkit-sticky; /* For Safari support */
+  top: 0;
+  z-index: 30;
+  height: auto; /* Allow height to expand based on content */
+  min-height: 40px; /* Minimum height for header cells */
+  padding-bottom: 35px; /* Extra padding to accommodate filter input */
+  background-color: var(--grid-header-background); /* Ensure background color is applied */
+  transform: translateZ(0); /* Force GPU acceleration for smoother rendering */
+  contain: layout;
+  left: 0;
+}
+
+.data-grid-virtualized tbody tr[style*="position: absolute"] {
+  display: table-row;
   width: 100%;
+  left: 0 !important; /* Ensure rows are aligned with headers */
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  table-layout: fixed;
+  z-index: 1; /* Ensure rows are below the sticky header */
+  position: absolute !important;
+  overflow: visible;
+  transform: translateZ(0); /* Force GPU acceleration for smoother scrolling */
+  will-change: transform;
+  contain: layout;
+  min-width: 100%; /* Ensure rows match header width */
 }
 
-.data-grid-container:has(tbody > tr[style*="position: absolute"]) .data-grid-header-cell {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.data-grid-container:has(tbody > tr[style*="position: absolute"]) tbody tr[style*="position: absolute"] {
-  display: flex;
-  width: 100%;
-}
-
-.data-grid-container:has(tbody > tr[style*="position: absolute"]) tbody tr[style*="position: absolute"] .data-grid-cell {
+.data-grid-virtualized tbody tr[style*="position: absolute"] .data-grid-cell {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  box-sizing: border-box;
+  display: table-cell;
+  min-width: 0;
+  padding: var(--grid-cell-padding);
+  border-right: 1px solid var(--grid-border-color);
+  width: auto;
+  max-width: none;
+  position: relative;
+  left: 0;
+}
+
+/* Enhanced sticky header for virtualized grids */
+.data-grid-sticky-header-container {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background-color: var(--grid-header-background);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  overflow: hidden;
+  border-bottom: 1px solid var(--grid-border-color);
+  table-layout: fixed;
+  height: 40px;
+  min-height: 40px;
+  display: block; /* Ensure block display for proper stickiness */
+  will-change: transform;
+  transform: translateZ(0); /* Force GPU acceleration */
+  scrollbar-gutter: stable;
+  contain: layout;
+  left: 0; /* Ensure alignment with body */
+  /* Ensure the header container scrolls horizontally with the body */
+  overflow-x: hidden;
+  overflow-y: hidden;
+}
+
+.data-grid-sticky-header-container.virtualized {
+  position: sticky;
+  top: 0;
+  z-index: 40; /* Higher z-index to ensure it stays on top */
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background-color: var(--grid-header-background);
+  border-bottom: 1px solid var(--grid-border-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  will-change: transform;
+  transform: translateZ(0);
+  scrollbar-gutter: stable;
+  contain: layout;
+  left: 0;
+}
+
+.data-grid-virtualized-body {
+  position: relative;
+  width: 100%;
+  overflow: auto;
+  margin-top: 0; /* Remove negative margin */
+  height: calc(100% - 40px);
+  max-height: calc(100% - 40px);
+  will-change: transform; /* Optimize for performance */
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on touch devices */
+  overscroll-behavior: none; /* Prevent scroll chaining */
+  scrollbar-gutter: stable; /* Prevent layout shift when scrollbar appears */
+  contain: content; /* Changed from strict to content to fix layout issues */
+  z-index: 1; /* Ensure proper stacking context */
+  flex: 1 1 auto;
+  display: block; /* Changed from flex to block for better table alignment */
+  transform: translateZ(0); /* Force GPU acceleration */
+  border-top: none; /* Remove border to prevent double border with header */
+  
+  /* Ensure the scrollbar doesn't affect layout */
+  scrollbar-width: thin; /* For Firefox */
+  
+  /* Ensure the header stays in sync with body */
+  &::-webkit-scrollbar {
+    height: 10px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 5px;
+  }
+  
+  /* Ensure table layout is fixed for consistent column widths */
+  & table {
+    table-layout: fixed !important;
+    width: 100% !important;
+  }
+}
+
+/* Ensure tables in both containers have the same column widths */
+.data-grid-sticky-header-container .data-grid,
+.data-grid-virtualized-body .data-grid,
+.data-grid-regular-body .data-grid {
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+  padding: 0;
+}
+
+/* Ensure header cells and data cells have the same width */
+.data-grid-sticky-header-container th,
+.data-grid-virtualized-body td,
+.data-grid-regular-body td {
+  box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Synchronize header and body scrolling */
+.data-grid-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.data-grid-sticky-header-container {
+  overflow-x: hidden;
+  z-index: 50; /* Ensure header is above all content */
+  position: sticky;
+  top: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: translateZ(0);
+  will-change: transform;
+  /* Ensure header stays in sync with body */
+  table-layout: fixed;
+  width: 100% !important;
+}
+
+.data-grid-virtualized-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  height: calc(100% - 40px); /* Adjust based on header height */
+  position: relative;
+  border-top: 1px solid var(--grid-border-color);
+  max-height: calc(100% - 40px);
+  z-index: 10; /* Lower than header */
+  will-change: transform; /* Performance optimization */
+  scrollbar-width: thin; /* Consistent scrollbar width */
+  contain: content; /* Changed from strict to content for better layout */
+  contain: layout; /* Improve performance */
+  scrollbar-gutter: stable; /* Prevent layout shift when scrollbar appears */
+  overscroll-behavior: none; /* Prevent scroll chaining */
+}
+
+.data-grid-regular-body {
+  flex: 1;
+  overflow: auto;
+  height: calc(100% - 40px);
+  position: relative;
+  border-top: 1px solid var(--grid-border-color);
+}
+
+.data-grid-virtualized .data-grid-header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 30;
+  background-color: var(--grid-header-background);
+  width: 100%;
+  display: table-header-group;
+  overflow: visible;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  table-layout: fixed;
+  left: 0;
+  /* Ensure header stays in sync with body */
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Ensure header cells align with data cells in virtualized mode */
+.data-grid-virtualized .data-grid-header-cell {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  min-width: 0;
+  box-sizing: border-box;
+  display: table-cell;
+  text-align: left;
 }
 
 /* Editable cell styles */
@@ -378,4 +625,85 @@
 .data-grid-header-cell:focus {
   outline: 2px solid var(--grid-secondary-color);
   outline-offset: -2px;
+}
+
+/* Pivot control styles */
+.data-grid-pivot-container {
+  width: 100%;
+  background-color: var(--grid-header-background);
+  border-bottom: 1px solid var(--grid-border-color);
+  padding: 16px;
+  z-index: 30;
+}
+
+.data-grid-pivot-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 16px;
+  background-color: var(--grid-header-background);
+  border: 1px solid var(--grid-border-color);
+  border-radius: var(--grid-border-radius);
+  margin-bottom: 16px;
+}
+
+.data-grid-pivot-section {
+  flex: 1 1 200px;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 12px;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.data-grid-pivot-select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--grid-border-color);
+  border-radius: 4px;
+  background-color: white;
+  min-height: 100px;
+}
+
+.data-grid-pivot-select[multiple] {
+  height: 120px;
+}
+
+.data-grid-pivot-section label {
+  font-weight: var(--grid-header-font-weight);
+  color: var(--grid-header-text-color);
+  margin-bottom: 4px;
+}
+
+.data-grid-pivot-select {
+  padding: 8px;
+  border: 1px solid var(--grid-border-color);
+  border-radius: var(--grid-border-radius);
+  background-color: white;
+  font-family: var(--grid-font-family);
+  font-size: var(--grid-font-size);
+}
+
+.data-grid-pivot-select[multiple] {
+  min-height: 100px;
+}
+
+.data-grid-pivot-select option {
+  padding: 4px 8px;
+}
+
+/* Pivot table styles */
+.data-grid-pivot-cell {
+  font-weight: normal;
+  text-align: right;
+}
+
+.data-grid-pivot-row-header {
+  font-weight: var(--grid-header-font-weight);
+  text-align: left;
+}
+
+.data-grid-pivot-total-row {
+  font-weight: var(--grid-header-font-weight);
+  background-color: rgba(0, 0, 0, 0.05);
 }
